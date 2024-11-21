@@ -66,9 +66,12 @@ func (s *server) AcceptConnections() {
 // Manages a single client connection
 func (s *server) HandleConnection(con net.Conn) {
 	defer s.CloseConnection(con)
-
 	con.Write([]byte("Welcome to TCP-Chat!\n         _nnnn_\n        dGGGGMMb\n       @p~qp~~qMb\n       M|@||@) M|\n       @,----.JM|\n      JS^\\__/  qKL\n     dZP        qKRb\n    dZP          qKKb\n   fZP            SMMb\n   HZM            MMMM\n   FqM            MMMM\n __| \".        |\\dS\"qML\n |    `.       | `' \\Zq\n_)      \\.___.,|     .'\n\\____   )MMMMMP|   .'\n     `-'       `--'\n[ENTER YOUR NAME]: "))
-
+	firstTime := true
+naming:
+	if !firstTime {
+		con.Write([]byte("[INVALIDE NAME RETRY]:"))
+	}
 	// Reading client's name
 	buf := make([]byte, 1024)
 	n, err := con.Read(buf)
@@ -78,11 +81,12 @@ func (s *server) HandleConnection(con net.Conn) {
 	}
 
 	clientName := strings.TrimSpace(string(buf[:n]))
-
-	s.Mu.Lock()
-	s.Clients[con] = clientName
-	s.Mu.Unlock()
-
+	for _, s := range s.Clients {
+		if s == clientName {
+			firstTime = false
+			goto naming
+		}
+	}
 	// Send chat history to the new client
 	con.Write([]byte(s.History))
 
@@ -129,7 +133,7 @@ func (s *server) HandleConnection(con net.Conn) {
 
 }
 
-//  handles disconnection of a client
+// handles disconnection of a client
 func (s *server) CloseConnection(con net.Conn) {
 	s.Mu.Lock()
 	clientName := s.Clients[con]
