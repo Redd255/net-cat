@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	port := ":8989" // default port
+	port := ":8989"
 	if len(os.Args) == 2 {
 		if _, err := strconv.Atoi(os.Args[1]); err == nil {
 			port = ":" + os.Args[1]
