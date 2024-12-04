@@ -87,6 +87,7 @@ naming:
 			goto naming
 		}
 	}
+	s.Clients[con] = clientName
 	// Send chat history to the new client
 	con.Write([]byte(s.History))
 
