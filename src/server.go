@@ -110,7 +110,7 @@ naming:
 			return
 		}
 		msg := string(buf[:n])
-		if strings.TrimSpace(string(msg)) == "" {
+		if strings.TrimSpace(msg) == "" {
 			continue
 		}
 		formattedMessage := fmt.Sprintf("[%s][%s]: %s", time.Now().Format("2006-01-02 15:04:05"), clientName, strings.TrimSpace(string(msg)))
