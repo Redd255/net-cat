@@ -9,7 +9,9 @@ import (
 	"time"
 )
 
-const MaxConnections = 10
+const MaxConnections = 2
+
+var c int
 
 type server struct {
 	Listenaddress string
@@ -43,6 +45,7 @@ func (s *server) Start() {
 // Accepts new client connections
 func (s *server) AcceptConnections() {
 	for {
+		c++
 		//connection between server and client
 		con, err := s.Ln.Accept()
 		if err != nil {
@@ -51,7 +54,7 @@ func (s *server) AcceptConnections() {
 		}
 
 		// Check if we have reached the maximum number of connections
-		if len(s.Clients) >= MaxConnections {
+		if c > MaxConnections {
 			fmt.Fprintln(con, "Server is full. Connection rejected.")
 			con.Close()
 			fmt.Println("Rejected connection from", con.RemoteAddr())
@@ -113,7 +116,7 @@ naming:
 		if strings.TrimSpace(msg) == "" {
 			continue
 		}
-		formattedMessage := fmt.Sprintf("[%s][%s]: %s", time.Now().Format("2006-01-02 15:04:05"), clientName, strings.TrimSpace(string(msg)))
+		formattedMessage := fmt.Sprintf("[%s][%s]:%s", time.Now().Format("2006-01-02 15:04:05"), clientName, strings.TrimSpace(string(msg)))
 
 		s.Mu.Lock()
 		s.History += formattedMessage + "\n"
