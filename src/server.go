@@ -87,40 +87,30 @@ naming:
 			goto naming
 		}
 	}
+	s.Mu.Lock()
 	s.Clients[con] = clientName
+	s.Mu.Unlock()
 	// Send chat history to the new client
 	con.Write([]byte(s.History))
 
 	// Notify other clients
 	s.BroadcastMessage(fmt.Sprintf("%s has joined our chat...", clientName), con)
 
-	//  receive messages
-	msgChan := make(chan []byte)
-
-	//  read messages from the client
-	go func() {
-		defer close(msgChan)
-		buf := make([]byte, 2048)
-		for {
-			con.Write([]byte(fmt.Sprintf("[%s][%s]:", time.Now().Format("2006-01-02 15:04:05"), clientName)))
-			n, err := con.Read(buf)
-			if err != nil {
-				if err.Error() == "EOF" {
-					log.Println("Client closed connection gracefully.")
-				} else {
-					log.Println("Client read error:", err)
-				}
-				return
-			}
-			if n > 0 {
-				msgChan <- buf[:n]
-			}
-		}
-	}()
-
 	// Listen for messages from the client
-	for msg := range msgChan {
-		if msg == nil || strings.TrimSpace(string(msg)) == "" {
+	for {
+		buf := make([]byte, 2048)
+		con.Write([]byte(fmt.Sprintf("[%s][%s]:", time.Now().Format("2006-01-02 15:04:05"), clientName)))
+		n, err := con.Read(buf)
+		if err != nil {
+			if err.Error() == "EOF" {
+				log.Println("Client closed connection gracefully.")
+			} else {
+				log.Println("Client read error:", err)
+			}
+			return
+		}
+		msg := string(buf[:n])
+		if strings.TrimSpace(string(msg)) == "" {
 			continue
 		}
 		formattedMessage := fmt.Sprintf("[%s][%s]: %s", time.Now().Format("2006-01-02 15:04:05"), clientName, strings.TrimSpace(string(msg)))
