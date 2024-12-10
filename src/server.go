@@ -11,14 +11,13 @@ import (
 
 const MaxConnections = 2
 
-var c int
-
 type server struct {
 	Listenaddress string
 	Ln            net.Listener
 	Clients       map[net.Conn]string
 	History       string
 	Mu            sync.Mutex
+	c             int
 }
 
 // NewServer initializes a new server
@@ -44,8 +43,8 @@ func (s *server) Start() {
 
 // Accepts new client connections
 func (s *server) AcceptConnections() {
+
 	for {
-		c++
 		//connection between server and client
 		con, err := s.Ln.Accept()
 		if err != nil {
@@ -54,15 +53,16 @@ func (s *server) AcceptConnections() {
 		}
 
 		// Check if we have reached the maximum number of connections
-		if c > MaxConnections {
+		if s.c < MaxConnections {
+			s.c++
+			// Handle the connection in a new goroutine
+			go s.HandleConnection(con)
+        }else {
 			fmt.Fprintln(con, "Server is full. Connection rejected.")
 			con.Close()
 			fmt.Println("Rejected connection from", con.RemoteAddr())
 			continue
 		}
-
-		// Handle the connection in a new goroutine
-		go s.HandleConnection(con)
 	}
 }
 
@@ -89,6 +89,10 @@ naming:
 			firstTime = false
 			goto naming
 		}
+	}
+	if clientName == "" {
+		con.Write([]byte("[INVALIDE NAME] Please enter a valid name.\n[ENTER YOUR NAME]: "))
+		goto naming
 	}
 	s.Mu.Lock()
 	s.Clients[con] = clientName
@@ -129,6 +133,8 @@ naming:
 
 // handles disconnection of a client
 func (s *server) CloseConnection(con net.Conn) {
+	s.c--
+	fmt.Println(s.c)
 	s.Mu.Lock()
 	clientName := s.Clients[con]
 	delete(s.Clients, con)
